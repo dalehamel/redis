@@ -165,6 +165,7 @@ static inline int connSetWriteHandlerWithBarrier(connection *conn, ConnectionCal
 }
 
 static inline void connClose(connection *conn) {
+    REDIS__CONN__CLOSE(conn);
     conn->type->close(conn);
 }
 

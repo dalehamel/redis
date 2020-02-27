@@ -2521,6 +2521,8 @@ void asyncCloseClientOnOutputBufferLimitReached(client *c) {
     if (checkClientOutputBufferLimits(c)) {
         sds client = catClientInfoString(sdsempty(),c);
 
+        REDIS__CLIENT__OUTPUT__BUFFER__OVERFLOW(c);
+
         freeClientAsync(c);
         serverLog(LL_WARNING,"Client %s scheduled to be closed ASAP for overcoming of output buffer limits.", client);
         sdsfree(client);
@@ -2561,6 +2563,7 @@ void flushSlavesOutputBuffers(void) {
             clientHasPendingReplies(slave))
         {
             writeToClient(slave,0);
+            REDIS__REPLICA__OUTPUT__BUFFER__FLUSHED(slave->id);
         }
     }
 }
