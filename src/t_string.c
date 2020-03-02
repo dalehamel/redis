@@ -87,6 +87,13 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     server.dirty++;
     if (expire) setExpire(c,c->db,key,mstime()+milliseconds);
     notifyKeyspaceEvent(NOTIFY_STRING,"set",key,c->db->id);
+    if (UNLIKELY(REDIS_COMMAND_SET_ENABLED())) {
+        size_t len = sizeof(long long);
+        if (sdsEncodedObject(key)) {
+            len = sdslen(key->ptr);
+        }
+        REDIS_COMMAND_SET(c, key->ptr, len);
+    }
     if (expire) notifyKeyspaceEvent(NOTIFY_GENERIC,
         "expire",key,c->db->id);
     addReply(c, ok_reply ? ok_reply : shared.ok);
@@ -164,6 +171,13 @@ int getGenericCommand(client *c) {
         addReply(c,shared.wrongtypeerr);
         return C_ERR;
     } else {
+        if (UNLIKELY(REDIS_COMMAND_GET_ENABLED())) {
+            size_t len = sizeof(long long);
+            if (sdsEncodedObject(o)) {
+                len = sdslen(o->ptr);
+            }
+            REDIS_COMMAND_GET(c, c->argv[1]->ptr, len);
+        }
         addReplyBulk(c,o);
         return C_OK;
     }

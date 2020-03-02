@@ -92,7 +92,7 @@ connection *connCreateAcceptedSocket(int fd) {
     connection *conn = connCreateSocket();
     conn->fd = fd;
     conn->state = CONN_STATE_ACCEPTING;
-    REDIS__CONN__CREATE(conn);
+    REDIS_CONN_CREATE(conn);
     return conn;
 }
 
@@ -112,7 +112,7 @@ static int connSocketConnect(connection *conn, const char *addr, int port, const
     aeCreateFileEvent(server.el, conn->fd, AE_WRITABLE,
             conn->type->ae_handler, conn);
 
-    REDIS__CONN__CONNECT(conn, addr, port, src_addr);
+    REDIS_CONN_CONNECT(conn, addr, port, src_addr);
     return C_OK;
 }
 
@@ -156,12 +156,12 @@ static void connSocketClose(connection *conn) {
      * keep the connection until the handler returns.
      */
     if (conn->flags & CONN_FLAG_IN_HANDLER) {
-        REDIS__CONN__CLOSING(conn);
+        REDIS_CONN_CLOSING(conn, fd);
         conn->flags |= CONN_FLAG_CLOSE_SCHEDULED;
         return;
     }
 
-    REDIS__CONN__CLOSE(conn);
+    REDIS_CONN_CLOSE(conn);
 
     zfree(conn);
 }
@@ -192,7 +192,7 @@ static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_hand
     if (conn->state != CONN_STATE_ACCEPTING) return C_ERR;
     conn->state = CONN_STATE_CONNECTED;
     if (!callHandler(conn, accept_handler)) return C_ERR;
-    REDIS__CONN__ACCEPT(conn);
+    REDIS_CONN_ACCEPT(conn);
     return C_OK;
 }
 

@@ -3,6 +3,10 @@
  */
 provider redis {
    /**
+    * Connection handling.
+    */
+
+   /**
     * Fired when a new connection object is created.
     * @param ptr pointer to the connection object
     */
@@ -27,9 +31,10 @@ provider redis {
    /**
     * Fired when a connection object is attempted to be closed but is
     * currently in use.
-    * @param ptr pointer to the connection object
+    * @param conn pointer to the connection object
+    * @param fd the file descriptor being closed
     */
-   probe conn__closing(const void *ptr);
+   probe conn__closing(const void *conn, int fd);
 
    /**
     * Fired when a connection object is freed
@@ -45,6 +50,10 @@ provider redis {
     */
    probe conn__dispatch(int connid, int64_t threadid);
 
+
+   /**
+    * Command handling.
+    */
 
    /**
     * Fired when the processing of a command starts.
@@ -66,10 +75,24 @@ provider redis {
     * Fired for a get-command
     * @param connid connection id
     * @param key requested key
-    * @param keylen length of the key
     * @param size size of the key's data (or signed int -1 if not found)
     */
-   probe command__get(int connid, const char *key, int keylen, int size);
+   probe command__get(const void *client, const char *key, int size);
+
+   /**
+    * Fired for a set-command
+    * @param client pointer to the client struct
+    * @param key the key being set
+    * @param size the size of the value being set
+    */
+   probe command__set(const void *client, const char *key, int size);
+
+   /**
+    * Fired for a delete command
+    * @param client pointer to the client struct
+    * @param lazy whether the delete is syncronous or not
+    */
+   probe command__del(const void *client, int lazy);
 
    /**
     * Fired when clients are paused on the server
@@ -78,12 +101,35 @@ provider redis {
    probe clients__paused(int end);
 
    /**
+    * Database interaction
+    */
+
+   /**
+    * Fired when a key is being deleted from the DB
+    * @param db the ordinal of the db the key is being deleted from
+    * @param key the key being deleted
+    */
+   probe db__delete__key(int db, const char *key);
+
+   /**
+    * Fired when a database is about to be flushed
+    * @param db the ordinal of the db the key is being deleted from. May be -1
+    */
+   probe db__flush__start(int db)
+
+   /**
+    * Fired when a database is about to be flushed
+    * @param db the ordinal of the db the key is being deleted from. May be -1
+    * @param count the number of keys removed
+    */
+   probe db__flush__end(int db, int count)
+
+   /**
     * Redis output buffer and replication probes
     */
 
    /**
     * Fired when redis writes to the client-output-buffer
-    * closed.
     * @param connid client id
     * @param size bytes written
     */
@@ -92,15 +138,15 @@ provider redis {
    /**
     * Fired when a client output buffer overflows and the client is forcibly
     * closed.
-    * @param connid client id
+    * @param client a pointer to the current client
     */
-   probe client__output__buffer__overflow(int connid);
+   probe client__output__buffer__overflow(const void *client);
 
    /**
     * Fired when a replica has its output buffer flushed
-    * @param connid client id
+    * @param client a pointer to the replica client
     */
-   probe replica__output__buffer__flushed(int connid);
+   probe replica__output__buffer__flushed(const void *client);
 };
 
 #pragma D attributes Unstable/Unstable/Common provider redis provider
