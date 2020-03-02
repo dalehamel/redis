@@ -90,9 +90,23 @@ provider redis {
    /**
     * Fired for a delete command
     * @param client pointer to the client struct
+    * @param key is the key being deleted
     * @param lazy whether the delete is syncronous or not
     */
-   probe command__del(const void *client, int lazy);
+   probe command__del(const void *client, const char *key, int lazy);
+
+   /**
+    * Fired when an MGET is starting
+    * @param client pointer to the client struct
+    * @param keys the number of keys being got
+    */
+   probe command__mget__start(const void *client, int keys)
+
+   /**
+    * Fired when an MGET has completed
+    * @param client pointer to the client struct
+    */
+   probe command__mget__end(const void *client)
 
    /**
     * Fired when clients are paused on the server
@@ -123,6 +137,18 @@ provider redis {
     * @param count the number of keys removed
     */
    probe db__flush__end(int db, int count)
+
+   /**
+    * Fired when a key node is being added to the underlying dict
+    * @param db the db the key is being added to
+    */
+   probe db__add__key(int db, const char *key);
+
+   /**
+    * Fired when a key node is being overwritten
+    * @param db the db the key is being added to
+    */
+   probe db__overwrite__key(int db, const char *key);
 
    /**
     * Redis output buffer and replication probes

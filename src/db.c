@@ -185,6 +185,9 @@ void dbAdd(redisDb *db, robj *key, robj *val) {
         val->type == OBJ_ZSET)
         signalKeyAsReady(db, key);
     if (server.cluster_enabled) slotToKeyAdd(key);
+
+    // TODO(tb): do something with the val
+    REDIS_DB_ADD_KEY(db->id, key->ptr);
 }
 
 /* Overwrite an existing key with a new value. Incrementing the reference
@@ -207,6 +210,9 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
         freeObjAsync(old);
         dictSetVal(db->dict, &auxentry, NULL);
     }
+
+    // TODO(tb): do something with the val
+    REDIS_DB_OVERWRITE_KEY(db->id, key->ptr);
 
     dictFreeVal(db->dict, &auxentry);
 }
@@ -534,6 +540,7 @@ void delGenericCommand(client *c, int lazy) {
                 "del",c->argv[j],c->db->id);
             server.dirty++;
             numdel++;
+            REDIS_COMMAND_DEL(c, c->argv[j], lazy);
         }
     }
     addReplyLongLong(c,numdel);

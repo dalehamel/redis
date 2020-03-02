@@ -332,6 +332,9 @@ void msetGenericCommand(client *c, int nx) {
             }
         }
     }
+    if (UNLIKELY(REDIS_COMMAND_MGET_START_ENABLED())) {
+        REDIS_COMMAND_MGET_START(c, (c->argc - 1) / 2);
+    }
 
     for (j = 1; j < c->argc; j += 2) {
         c->argv[j+1] = tryObjectEncoding(c->argv[j+1]);
@@ -340,6 +343,8 @@ void msetGenericCommand(client *c, int nx) {
     }
     server.dirty += (c->argc-1)/2;
     addReply(c, nx ? shared.cone : shared.ok);
+
+    REDIS_COMMAND_MGET_END(c);
 }
 
 void msetCommand(client *c) {
