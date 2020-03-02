@@ -185,6 +185,9 @@ void dbAdd(redisDb *db, robj *key, robj *val) {
         val->type == OBJ_ZSET)
         signalKeyAsReady(db, key);
     if (server.cluster_enabled) slotToKeyAdd(key);
+
+    // TODO(tb): do something with the val
+    REDIS_DB_ADD_KEY(db->id, key->ptr);
 }
 
 /* Overwrite an existing key with a new value. Incrementing the reference
@@ -207,6 +210,9 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
         freeObjAsync(old);
         dictSetVal(db->dict, &auxentry, NULL);
     }
+
+    // TODO(tb): do something with the val
+    REDIS_DB_OVERWRITE_KEY(db->id, key->ptr);
 
     dictFreeVal(db->dict, &auxentry);
 }
@@ -289,6 +295,7 @@ int dbSyncDelete(redisDb *db, robj *key) {
 /* This is a wrapper whose behavior depends on the Redis lazy free
  * configuration. Deletes the key synchronously or asynchronously. */
 int dbDelete(redisDb *db, robj *key) {
+    REDIS_DB_DELETE_KEY(db->id, key->ptr);
     return server.lazyfree_lazy_server_del ? dbAsyncDelete(db,key) :
                                              dbSyncDelete(db,key);
 }
@@ -360,6 +367,8 @@ long long emptyDbGeneric(redisDb *dbarray, int dbnum, int flags, void(callback)(
                           REDISMODULE_SUBEVENT_FLUSHDB_START,
                           &fi);
 
+    REDIS_DB_FLUSH_START(dbnum);
+
     /* Make sure the WATCHed keys are affected by the FLUSH* commands.
      * Note that we need to call the function while the keys are still
      * there. */
@@ -396,6 +405,7 @@ long long emptyDbGeneric(redisDb *dbarray, int dbnum, int flags, void(callback)(
     moduleFireServerEvent(REDISMODULE_EVENT_FLUSHDB,
                           REDISMODULE_SUBEVENT_FLUSHDB_END,
                           &fi);
+    REDIS_DB_FLUSH_END(dbnum, removed);
 
     return removed;
 }
@@ -530,6 +540,7 @@ void delGenericCommand(client *c, int lazy) {
                 "del",c->argv[j],c->db->id);
             server.dirty++;
             numdel++;
+            REDIS_COMMAND_DEL(c, c->argv[j], lazy);
         }
     }
     addReplyLongLong(c,numdel);
